@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="build/css/vendor.css">
+    <link rel="stylesheet" href="build/css/styles.css">
+    <script src="build/js/vendor.min.js"></script>
+    <script src="http://maps.google.com/maps/api/js"></script>
+    <script src="build/js/app.js"></script>
+    <meta charset="utf-8">
+    <title>IsoMap</title>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row header">
+        <div class="col-md-12">
+          <div class="page-header">
+            <h1>IsoMap</h1>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-8 col-center">
+          <form class="form-inline" id="location">
+            <input class="form-control" type="text" name="userLocation" placeholder="Enter a location...">
+            <button class="btn form-control btn-success" type="submit" name="submit">Submit</button>
+          </form>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-10 col-center">
+          <div class="map-wrapper">
+            <div id="google-map">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
