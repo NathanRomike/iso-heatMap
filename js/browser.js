@@ -2,11 +2,58 @@ var GMaps = require('gmaps');
 function getLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function(position) {
-      return createMap(position.coords.latitude,position.coords.longitude);
+      createMap(position.coords.latitude,position.coords.longitude);
     });
   } else {
     return false;
   }
+}
+
+function fillMap(map) {
+  var marker = map.markers[0];
+  var centerLat = marker.position.lat();
+  var centerLng = marker.position.lng();
+  var pointsArray = [];
+  for(var i = 0; i < 25; i++) {
+    var randLat = Math.random() * 0.50 < 0.25 ? Math.random() * 0.25 : -(Math.random() * 0.25);
+    var randLng = Math.random() * 0.50 < 0.25 ? Math.random() * 0.25 : -(Math.random() * 0.25);
+    var tempLat = centerLat + randLat;
+    var tempLng = centerLng + randLng;
+    var tempPos = new google.maps.LatLng(tempLat,tempLng);
+    pointsArray.push(tempPos);
+  }
+  var request = new google.maps.DistanceMatrixService().getDistanceMatrix({
+    origins:[marker.position],
+    destinations: pointsArray,
+    travelMode: google.maps.TravelMode.DRIVING
+  }, function(response, status) {
+    var timeDistArr = [];
+    for(var j = 0; j < response.destinationAddresses.length; j++) {
+      var timeDistance = [
+        response.destinationAddresses[j],
+        response.rows[0].elements[j].duration.value
+      ]
+      timeDistArr.push(timeDistance);
+    }
+    for(var k = 0; k < timeDistArr.length; k++) {
+      new google.maps.Geocoder().geocode({'address': timeDistArr[k][0]}, function(results, status) {
+        if (status == google.maps.GeocoderStatus.OK) {
+          var position = new google.maps.LatLng(results[0].geometry.location.lat(),results[0].geometry.location.lng());
+          console.log(position);
+          map.drawCircle({
+            radius: 5000,
+            fillColor: "red",
+            fillOpacity: Math.random(),
+            lat: position.lat(),
+            lng: position.lng(),
+            strokeWidth: 0
+          });
+        } else {
+          console.log(timeDistArr[k][0]);
+        }
+      })
+    }
+  });
 }
 
 function createMap(lat, lng) {
@@ -14,7 +61,7 @@ function createMap(lat, lng) {
     {
       featureType: "all",
       stylers: [
-       { saturation: -100 }
+       { saturation: -80 }
       ]
     },{
       featureType: "road.arterial",
@@ -36,19 +83,23 @@ function createMap(lat, lng) {
     div: '#google-map',
     lat: lat,
     lng: lng,
-    styles: styleArray
+    styles: styleArray,
+    zoom: 10
   });
+
+  var marker = map.addMarker({lat: lat, lng: lng});
+  fillMap(map);
 }
 
 $(function() {
-  getLocation();
+  var map = getLocation();
 
   $("#resetLocation").on("click", function(e) {
     e.preventDefault();
     getLocation();
   });
 
-  $("#location").on("submit", function(e) {
+  $("#location").submit(function(e) {
     e.preventDefault();
     var input = $("#userLocation").val();
     var requestUrl = "https://maps.googleapis.com/maps/api/geocode/json?address=" +
@@ -64,7 +115,7 @@ $(function() {
         return alert("location not found");
       } else {
         var location = data.results[0].geometry.location;
-        createMap(location.lat, location.lng);
+        map = createMap(location.lat, location.lng);
       }
     });
 
