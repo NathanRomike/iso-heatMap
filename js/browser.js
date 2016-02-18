@@ -10,13 +10,57 @@ function getLocation() {
 }
 
 function fillMap(map) {
+  var dist = 0.25;
+  var callCount = 0;
+  for(var j = 0; j < 4; j++) {
+    genCircles(map,dist);
+    dist+=0.05;
+  }
+  var repeat = setInterval(function() {
+    if (callCount < 10) {
+      for(var i = 0; i < 4; i++) {
+        genCircles(map,dist);
+        dist+=0.03;
+      }
+      callCount++;
+    } else {
+      clearInterval(repeat);
+    }
+  }, 10000);
+}
+
+function drawCircle(point, radius, dir)
+{
+    var d2r = Math.PI / 180;   // degrees to radians
+    var r2d = 180 / Math.PI;   // radians to degrees
+    var earthsradius = 3963; // 3963 is the radius of the earth in miles
+    var points = 32;
+
+    // find the raidus in lat/lon
+    var rlat = (radius / earthsradius) * r2d;
+    var rlng = rlat / Math.cos(point.lat() * d2r);
+
+    var extp = new Array();
+    if (dir==1) {var start=0;var end=points+1} // one extra here makes sure we connect the
+    else{var start=points+1;var end=0}
+    for (var i=start; (dir==1 ? i < end : i > end); i=i+dir)
+    {
+        var theta = Math.PI * (i / (points/2));
+        ey = point.lng() + (rlng * Math.cos(theta)); // center a + radius x * cos(theta)
+        ex = point.lat() + (rlat * Math.sin(theta)); // center b + radius y * sin(theta)
+        extp.push(new google.maps.LatLng(ex, ey));
+    }
+    return extp;
+}
+
+function genCircles(map,dist) {
   var marker = map.markers[0];
   var centerLat = marker.position.lat();
   var centerLng = marker.position.lng();
   var pointsArray = [];
   for(var i = 0; i < 25; i++) {
-    var randLat = Math.random() * 0.50 < 0.25 ? Math.random() * 0.25 : -(Math.random() * 0.25);
-    var randLng = Math.random() * 0.50 < 0.25 ? Math.random() * 0.25 : -(Math.random() * 0.25);
+    var randLat = Math.random() * 0.50 < 0.25 ? Math.random() * dist : -(Math.random() * dist);
+    var randLng = Math.random() * 0.50 < 0.25 ? Math.random() * dist : -(Math.random() * dist);
     var tempLat = centerLat + randLat;
     var tempLng = centerLng + randLng;
     var tempPos = new google.maps.LatLng(tempLat,tempLng);
@@ -27,6 +71,7 @@ function fillMap(map) {
     destinations: pointsArray,
     travelMode: google.maps.TravelMode.DRIVING
   }, function(response, status) {
+    console.log(response);
     var timeDistArr = [];
     for(var j = 0; j < response.destinationAddresses.length; j++) {
       var timeDistance = [
@@ -35,23 +80,24 @@ function fillMap(map) {
       ]
       timeDistArr.push(timeDistance);
     }
-    for(var k = 0; k < timeDistArr.length; k++) {
-      new google.maps.Geocoder().geocode({'address': timeDistArr[k][0]}, function(results, status) {
-        if (status == google.maps.GeocoderStatus.OK) {
-          var position = new google.maps.LatLng(results[0].geometry.location.lat(),results[0].geometry.location.lng());
-          console.log(position);
-          map.drawCircle({
-            radius: 5000,
-            fillColor: "red",
-            fillOpacity: Math.random(),
-            lat: position.lat(),
-            lng: position.lng(),
-            strokeWidth: 0
-          });
-        } else {
-          console.log(timeDistArr[k][0]);
-        }
-      })
+    for(var k = 0; k < pointsArray.length; k++) {
+      if(timeDistArr[k][1]/60 < 10) {
+        color = "green";
+      } else if (timeDistArr[k][1]/60 < 30) {
+        color = "yellow";
+      } else if (timeDistArr[k][1]/60 < 60){
+        color = "orange";
+      } else if(timeDistArr[k][1]/60 < 180) {
+        color = "red";
+      } else {
+        color = "purple";
+      }
+      map.drawPolygon({
+        paths: [drawCircle(pointsArray[k], 5, 1)],
+        fillColor: color,
+        fillOpacity: 0.1,
+        strokeOpacity: 0,
+      });
     }
   });
 }
@@ -103,7 +149,7 @@ $(function() {
     e.preventDefault();
     var input = $("#userLocation").val();
     var requestUrl = "https://maps.googleapis.com/maps/api/geocode/json?address=" +
-                     input + "&key=AIzaSyAup2UosPinubq3ITXfGnGvcDwR7GTGucU";
+                     input + "&key=AIzaSyDcRFgqQ2qoymJrE5O2YfK8qdoERKuvTXY";
     var request = $.ajax({
       method: "POST",
       url: requestUrl,
@@ -114,6 +160,7 @@ $(function() {
       if (data.status === "ZERO_RESULTS") {
         return alert("location not found");
       } else {
+        console.log(data);
         var location = data.results[0].geometry.location;
         map = createMap(location.lat, location.lng);
       }
