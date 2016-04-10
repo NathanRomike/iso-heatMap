@@ -1,4 +1,4 @@
-# Pizza Party - JavaScript
+# HeatMap - JavaScript
 
 ##### 2.17.2016.
 
