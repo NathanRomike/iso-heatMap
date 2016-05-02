@@ -131,3 +131,11 @@ gulp.task('build', ['clean'], function() {
   gulp.start('bower');
   gulp.start('cssBuild');
 });
+
+gulp.task('serveprod', function() {
+  connect.server({
+    root: iso-heatMap/js,
+    port: process.env.PORT || 5000,
+    liveload: false
+  });
+});
